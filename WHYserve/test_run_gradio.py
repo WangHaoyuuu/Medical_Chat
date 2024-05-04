@@ -31,7 +31,7 @@ LLM_MODEL_LIST = sum(list(LLM_MODEL_DICT.values()),[])
 INIT_MODEL = LLM_MODEL_LIST[0]
 # print(INIT_MODEL)
 # print(LLM_MODEL_LIST)
-DEFAULT_PERSIST_PATH = '/workspaces/Medical_Chat/WHYembedding/精神科/vector_db'
+DEFAULT_PERSIST_PATH = 'WHYembedding/精神科/vector_db'
 
 embedding = HuggingFaceEmbeddings(model_name="moka-ai/m3e-base")
 
@@ -291,4 +291,4 @@ gr.close_all()
 # 启动新的 Gradio 应用，设置分享功能为 True，并使用环境变量 PORT1 指定服务器端口。
 # demo.launch(share=True, server_port=int(os.environ['PORT1']))
 # 直接启动
-demo.launch(share=False)
+demo.launch(share=True)

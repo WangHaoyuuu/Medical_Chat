@@ -1,5 +1,7 @@
 import errno
 import os
+import os
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 from pathlib import Path
 import re
 from langchain_community.document_loaders import PyMuPDFLoader
