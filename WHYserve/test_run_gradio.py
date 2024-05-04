@@ -31,10 +31,20 @@ LLM_MODEL_LIST = sum(list(LLM_MODEL_DICT.values()),[])
 INIT_MODEL = LLM_MODEL_LIST[0]
 # print(INIT_MODEL)
 # print(LLM_MODEL_LIST)
-DEFAULT_PERSIST_PATH = 'WHYembedding/精神科/vector_db'
+DEFAULT_PERSIST_PATH = '/home/why/CODES/Medical_Chat/WHYembedding/儿科/vector_db'
+# 定义所有可选的向量数据库路径
+db_paths = {
+    "儿科": '/home/why/CODES/Medical_Chat/WHYembedding/儿科/vector_db',
+    "耳鼻喉科": '/home/why/CODES/Medical_Chat/WHYembedding/耳鼻喉科/vector_db',
+    "妇产科": '/home/why/CODES/Medical_Chat/WHYembedding/妇产科/vector_db',
+    "感染科": '/home/why/CODES/Medical_Chat/WHYembedding/感染科/vector_db',
+    "内科": '/home/why/CODES/Medical_Chat/WHYembedding/内科/vector_db',
+    "神经科": '/home/why/CODES/Medical_Chat/WHYembedding/神经科/vector_db',
+    "外科": '/home/why/CODES/Medical_Chat/WHYembedding/外科/vector_db',
+}
+
 
 embedding = HuggingFaceEmbeddings(model_name="moka-ai/m3e-base")
-
 
 class qa_chain():
     def __init__(self):
@@ -53,6 +63,7 @@ class qa_chain():
         """
         调用带历史记录的问答链进行回答
         """
+        # persist_path = selected_db_key
         if question == None or len(question) == 0:
             # 测试
             print("请输入问题")
@@ -60,7 +71,20 @@ class qa_chain():
         try:
             key = (model, id(embedding))
             # 测试
+
             print(key)
+
+            print(chat_history)
+            # Unsupported chat history format: <class 'list'>. Full chat history:
+            if chat_history == None or len(chat_history) == 0:
+                chat_history = []
+                print("chat_history is None")
+            else:
+                # chat_history示例
+                # 将chat_history中的内容转换为元组而不是
+                chat_history = [(item[0], item[1]) for item in chat_history]
+            
+                print(chat_history)
             if key not in self.chat_qa_chain_self:
                 self.chat_qa_chain_self[key] = Chat_QA_chain_self(model=model, 
                                                                    temperature=temperature,
@@ -76,9 +100,9 @@ class qa_chain():
             
             print(chain)
             # 假设 chain.answer 返回的是一个字符串
-            answer = chain.answer(question=question)
-            print(answer)
-            return "", chat_history
+            
+            # print(answer)
+            return "", chain.answer(question=question, temperature=temperature, top_k=top_k)
         except Exception as e:
             print(e)
             return [("Error", str(e))], chat_history
@@ -90,7 +114,6 @@ class qa_chain():
                              embedding = HuggingFaceEmbeddings(model_name="moka-ai/m3e-base"),
                              temperature:float=0.36,                              
                              question:str=None,
-
                              top_k:int=3,
                              chat_history:list=[],
                              persist_path:str=DEFAULT_PERSIST_PATH,
@@ -123,15 +146,15 @@ class qa_chain():
         except Exception as e:
             return [("Error", str(e))], chat_history
 
-
-
     # clear_history 还未测试
     def clear_history(self):
         if len(self.chat_qa_chain_self) > 0:
+            print("清空历史记录")
             for chain in self.chat_qa_chain_self.values():
-                print("清空历史记录")
                 chain.clear_history()
-                
+
+
+
 def format_chat_prompt(message:str, chat_history:list=[]):
     """
     格式化聊天prompt
@@ -172,7 +195,6 @@ def respond(message,
         bot_message = re.sub(r"\n", '<br/>', bot_message)
         # 将用户的消息和机器人的回复加入到聊天历史记录中。
         chat_history.append((message, bot_message))
-        # 返回一个空字符串和更新后的聊天历史记录（这里的空字符串可以替换为真正的机器人回复，如果需要显示在界面上）。
         return "", chat_history
     except Exception as e:
         return e, chat_history
@@ -196,7 +218,13 @@ with block as demo:
     with gr.Row():
         with gr.Column(scale=4):
             chatbot = gr.Chatbot(height=400, show_copy_button=True, show_share_button=True)
+            # msg的默认值是example_prompts[0]，即第一个例子。
             msg = gr.Textbox(label="Prompt")
+            # msg = str(msg)
+            db_select = gr.Dropdown(list(db_paths.keys()), label="选择数据库", value="儿科", interactive=True)
+            
+            # print(db_select)
+            
             example_prompt_table = gr.Radio(
                 example_prompts, 
                 label="Example Prompts",
@@ -216,16 +244,17 @@ with block as demo:
             with model_argument:
                 temperature = gr.Slider(0,
                                         1,
-                                        value=0.36,
+                                        value=0.01,
                                         step=0.01,
                                         label="llm temperature",
                                         interactive=True)
                 top_k = gr.Slider(1,
-                                  10,
+                                  5,
                                   value=3,
                                   step=1,
                                   label="vector db search top k",
                                   interactive=True)
+                
                 history_len = gr.Slider(0,
                                         5,
                                         value=3,
@@ -244,16 +273,19 @@ with block as demo:
                     label="embeddings",
                     value=INIT_EMBEDDING_MODEL,
                     interactive=True)
-        db_with_his_btn.click(model_center.chat_qa_chain_self_answer, 
-                                inputs=[
-                                    llm,         # model
-                                    embeddings,  # embedding
-                                    temperature, # temperature
-                                    msg,         # question
-                                    top_k,       # top_k
-                                    chatbot # chat_history (这个参数应该是由 Chatbot 组件提供的历史记录)
-                                ],
-                              outputs=[msg, chatbot])
+                
+        db_with_his_btn.click(
+            model_center.chat_qa_chain_self_answer, 
+            inputs=[
+                llm, 
+                embeddings, 
+                temperature, 
+                msg, 
+                top_k, 
+                chatbot, 
+            ],
+            outputs=[msg, chatbot]
+        )
         # 设置按钮的点击事件。当点击时，调用上面定义的 qa_chain_self_answer 函数，并传入用户的消息和聊天历史记录，然后更新文本框和聊天机器人组件。
         db_wo_his_btn.click(model_center.qa_chain_self_answer, 
                                 inputs=[
@@ -262,7 +294,8 @@ with block as demo:
                                     temperature, # temperature
                                     msg,         # question
                                     top_k,       # top_k
-                                    chatbot # chat_history (这个参数应该是由 Chatbot 组件提供的历史记录)
+                                    chatbot,     # chat_history (这个参数应该是由 Chatbot 组件提供的历史记录)
+                                      # db_select
                                 ],
                               outputs=[msg, chatbot])
         # 设置按钮的点击事件。当点击时，调用上面定义的 respond 函数，并传入用户的消息和聊天历史记录，然后更新文本框和聊天机器人组件。

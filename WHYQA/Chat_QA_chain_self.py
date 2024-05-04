@@ -41,6 +41,7 @@ class Chat_QA_chain_self:
 
         self.vectordb = init_db(persist_path=self.persist_path,
                                 embedding=self.embedding)
+        
         print("vectordb init success!")
 
         self.retriever = self.vectordb.as_retriever(search_type="similarity",
@@ -53,6 +54,7 @@ class Chat_QA_chain_self:
                             self.appid,
                             self.api_key,
                             self.api_secret)
+        
         print(f"{self.llm._llm_type} init success!")
 
         self.chat_qa_chain = ConversationalRetrievalChain.from_llm(
@@ -81,13 +83,13 @@ class Chat_QA_chain_self:
         answer = re.sub(r"\n\n", "", answer)
         self.chat_history.append((question,answer))
         # print(self.chat_history)
-        return answer
+        return self.chat_history
                                 
 # 测试
 if __name__ == "__main__":
     embedding = HuggingFaceEmbeddings(model_name="moka-ai/m3e-base")
-    for model in ["Sparkv3"]:
-        qa = Chat_QA_chain_self(model=model, embedding=embedding)
+    for model in ["Yi-34B-Chat"]:
+        qa = Chat_QA_chain_self(model=model, embedding=embedding, persist_path='/home/why/CODES/Medical_Chat/WHYembedding/儿科/vector_db')
         result = qa.answer("什么是精神科疾病")
         print(result)
         result = qa.answer("精神科疾病有哪些")

@@ -9,8 +9,8 @@ from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings.huggingface import HuggingFaceEmbeddings
 
-DEFAULT_DB_PATH = "/workspaces/Medical_Chat/WHYmedicalbooks"
-DEFAULT_PERSIST_PATH = "/workspaces/Medical_Chat/WHYembedding"
+DEFAULT_DB_PATH = "/home/why/CODES/Medical_Chat/WHYmedicalbooks"
+DEFAULT_PERSIST_PATH = "/home/why/CODES/Medical_Chat/WHYembedding"
 
 def get_files(dir_path):
     file_list = []
@@ -28,7 +28,7 @@ def clean_pdf_content(page_content):
     content = page_content.replace('\n', '')
     # Remove all periods, including sequences of periods
     content = re.sub(r'\.+', '', content)
-    content = re.sub(r'\.+', '', content)
+    # content = re.sub(r'\.+', '', content)
     return content
 
 class PageContent:
@@ -75,7 +75,8 @@ def create_db(files):
             
         # Create a vector database
         vectordb = Chroma.from_documents(
-            documents=split_docs[:10],  # Assuming you want to process the first 10 chunks
+            
+            documents=split_docs[:],  # Assuming you want to process the first 10 chunks
             embedding=embedding,
             persist_directory=persist_dir
         )
