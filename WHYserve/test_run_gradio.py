@@ -16,7 +16,14 @@ from WHYQA.model_to_llm import get_completion
 from WHYQA.QA_chain_self import QA_chain_self
 from WHYQA.Chat_QA_chain_self import Chat_QA_chain_self
 from langchain.embeddings.huggingface import HuggingFaceEmbeddings
-
+from WHYQA.model_to_llm import get_completion
+from WHYQA.QA_chain_self import QA_chain_self
+from WHYQA.Chat_QA_chain_self import Chat_QA_chain_self
+from langchain.embeddings.huggingface import HuggingFaceEmbeddings
+from WHYLLMCallClass.LLM import ChatGLM_LLM
+from langchain.prompts import PromptTemplate
+from langchain.chains import RetrievalQA
+from langchain_community.vectorstores import Chroma
 
 # LLM模型选择
 LLM_MODEL_DICT = {
@@ -48,7 +55,7 @@ class qa_chain():
                                 top_k:int=3,
                                 chat_history:list=[],
                                 department:str=None,
-):
+                                ):
         """
         调用带历史记录的问答链进行回答
         """
@@ -190,7 +197,69 @@ def respond(message,
     except Exception as e:
         return e, chat_history
 
+def load_chain(department):
+    # 加载问答链
+    # 定义 Embeddings
+    embeddings = HuggingFaceEmbeddings(model_name="moka-ai/m3e-base")
 
+    # 向量数据库持久化路径
+    
+    persist_directory = db_paths[department]
+    print(persist_directory)
+    # 加载数据库
+    vectordb = Chroma(
+        persist_directory=persist_directory,  # 允许我们将persist_directory目录保存到磁盘上
+        embedding_function=embeddings
+    )
+    vectordb.persist()
+    print("vectordb init success!")
+    print(vectordb)
+
+    # 加载自定义 LLM
+    llm = ChatGLM_LLM(model_path = "/root/autodl-tmp/ZhipuAI/chatglm3-6b")
+
+    # 定义一个 Prompt Template
+    default_template_rq = """使用以下上下文来回答最后的问题。如果你不知道答案，就说你不知道，不要试图编造答
+    案。最多使用三句话。尽量使答案简明扼要。切记一定在回答的最后说“谢谢你的提问！”。
+    {context}
+    问题: {question}
+    有用的回答:"""
+
+    QA_CHAIN_PROMPT = PromptTemplate(input_variables=["context","question"],template=default_template_rq)
+
+    # 运行 chain
+    qa_chain = RetrievalQA.from_chain_type(llm,
+                                           retriever=vectordb.as_retriever(
+                                            search_type="similarity",   
+                                            search_kwargs={'k': 3}
+    ),
+                                            return_source_documents=True,
+                                            chain_type_kwargs={"prompt":QA_CHAIN_PROMPT})
+    
+    return qa_chain
+
+class Model_center():
+    """
+    存储检索问答链的对象 
+    """
+
+    def qa_chain_self_answer(self, question: str, chat_history: list = [], department:str=None):
+        """
+        调用问答链进行回答
+        """
+        chain = load_chain(department)
+        if question == None or len(question) < 1:
+            return "", chat_history
+        try:
+            chat_history.append(
+                (question, chain.invoke({"query": question,"temperature": 0.01,"top_k":3})["result"]))
+            # 将问答结果直接附加到问答历史中，Gradio 会将其展示出来
+            return "", chat_history
+        except Exception as e:
+            return e, chat_history
+
+
+    
 example_prompts = [
     "请问什么是精神病？",
     "介绍一下深度学习的基本原理。",
@@ -198,16 +267,17 @@ example_prompts = [
 ]
 
 db_paths = {
-    "儿科": '/home/why/CODES/Medical_Chat/WHYembedding/儿科/vector_db',
-    "耳鼻喉科": '/home/why/CODES/Medical_Chat/WHYembedding/耳鼻喉科/vector_db',
-    "妇产科": '/home/why/CODES/Medical_Chat/WHYembedding/妇产科/vector_db',
-    "感染科": '/home/why/CODES/Medical_Chat/WHYembedding/感染科/vector_db',
-    "内科": '/home/why/CODES/Medical_Chat/WHYembedding/内科/vector_db',
-    "神经科": '/home/why/CODES/Medical_Chat/WHYembedding/神经科/vector_db',
-    "外科": '/home/why/CODES/Medical_Chat/WHYembedding/外科/vector_db',
+    "儿科": '/root/autodl-tmp/Medical_Chat/WHYembedding/儿科/vector_db',
+    "耳鼻喉科": '/root/autodl-tmp/Medical_Chat/WHYembedding/耳鼻喉科/vector_db',
+    "妇产科": '/root/autodl-tmp/Medical_Chat/WHYembedding/妇产科/vector_db',
+    "感染科": '/root/autodl-tmp/Medical_Chat/WHYembedding/感染科/vector_db',
+    "内科": '/root/autodl-tmp/Medical_Chat/WHYembedding/内科/vector_db',
+    "神经科": '/root/autodl-tmp/Medical_Chat/WHYembedding/神经科/vector_db',
+    "外科": '/root/autodl-tmp/Medical_Chat/WHYembedding/外科/vector_db',
 }
 
 model_center = qa_chain()
+chatglm6b = Model_center()
 import gradio as gr
 
 block = gr.Blocks()
@@ -236,6 +306,7 @@ with block as demo:
                 db_with_his_btn = gr.Button("Chat db with history")
                 db_wo_his_btn = gr.Button("Chat db without history")
                 llm_btn = gr.Button("Chat with llm")
+                db_wo_his_btn_chatglm = gr.Button("Chat with chatglm6B")
             with gr.Row():
                 clear = gr.ClearButton(components=[chatbot], value="Clear console")
         with gr.Column(scale=1):
@@ -299,6 +370,14 @@ with block as demo:
                                     db_select
                                 ],
                               outputs=[msg, chatbot])
+        
+        db_wo_his_btn_chatglm.click(chatglm6b.qa_chain_self_answer, 
+                            inputs=[
+                                    msg, 
+                                    chatbot,
+                                    db_select], 
+                            outputs=[msg, chatbot])
+        
         # 设置按钮的点击事件。当点击时，调用上面定义的 respond 函数，并传入用户的消息和聊天历史记录，然后更新文本框和聊天机器人组件。
         llm_btn.click(respond, 
                             inputs=[
