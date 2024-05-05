@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
     # 测试QianFanLLM
     model = QianFanLLM(model_name="Yi-34B-Chat", 
-                       api_key="HnngI6IOybeRJyLgvtowIRUt", 
-                       api_secret="Vx7tFMIdGDrouCsyBRuChmbNBHhlMM2e")
+                       api_key="", 
+                       api_secret="")
     result = model.invoke("你好")
     print(result)

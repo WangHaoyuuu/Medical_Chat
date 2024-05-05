@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     # # 测试ZhiPuLLM
     model = ZhiPuLLM(model_name = "glm-3-turbo",
-                      api_key = "26128e545ddd8a44c6588c4d530a5fbe.hj6klSWNSFWnli9p",
+                      api_key = "",
                       )
 
     print(model.invoke("你好"))

@@ -22,7 +22,7 @@ from langchain.embeddings.huggingface import HuggingFaceEmbeddings
 LLM_MODEL_DICT = {
     "QIANFAN":["Yi-34B-Chat"],
     "SPARK":["Sparkv3"],
-    "ZHIPU":["glm-3-turbo"]
+    "ZHIPU":["glm-3-turbo",]
 }
 
 EMBEDDING_MODEL_LIST = ['m3e']
@@ -31,18 +31,7 @@ LLM_MODEL_LIST = sum(list(LLM_MODEL_DICT.values()),[])
 INIT_MODEL = LLM_MODEL_LIST[0]
 # print(INIT_MODEL)
 # print(LLM_MODEL_LIST)
-DEFAULT_PERSIST_PATH = '/home/why/CODES/Medical_Chat/WHYembedding/儿科/vector_db'
 # 定义所有可选的向量数据库路径
-db_paths = {
-    "儿科": '/home/why/CODES/Medical_Chat/WHYembedding/儿科/vector_db',
-    "耳鼻喉科": '/home/why/CODES/Medical_Chat/WHYembedding/耳鼻喉科/vector_db',
-    "妇产科": '/home/why/CODES/Medical_Chat/WHYembedding/妇产科/vector_db',
-    "感染科": '/home/why/CODES/Medical_Chat/WHYembedding/感染科/vector_db',
-    "内科": '/home/why/CODES/Medical_Chat/WHYembedding/内科/vector_db',
-    "神经科": '/home/why/CODES/Medical_Chat/WHYembedding/神经科/vector_db',
-    "外科": '/home/why/CODES/Medical_Chat/WHYembedding/外科/vector_db',
-}
-
 
 embedding = HuggingFaceEmbeddings(model_name="moka-ai/m3e-base")
 
@@ -58,11 +47,12 @@ class qa_chain():
                                 question:str=None,
                                 top_k:int=3,
                                 chat_history:list=[],
-                                persist_path:str=DEFAULT_PERSIST_PATH,
+                                department:str=None,
 ):
         """
         调用带历史记录的问答链进行回答
         """
+        persist_path = db_paths[department]
         # persist_path = selected_db_key
         if question == None or len(question) == 0:
             # 测试
@@ -116,13 +106,14 @@ class qa_chain():
                              question:str=None,
                              top_k:int=3,
                              chat_history:list=[],
-                             persist_path:str=DEFAULT_PERSIST_PATH,
+                             department:str=None,
                                 ):
                             
                              
         """
         调用不带历史记录的问答链进行回答
         """ 
+        persist_path = db_paths[department]
         if question == None or len(question) < 1:
             return "", chat_history  
         try:
@@ -206,6 +197,16 @@ example_prompts = [
     "如何使用Python进行数据分析？"
 ]
 
+db_paths = {
+    "儿科": '/home/why/CODES/Medical_Chat/WHYembedding/儿科/vector_db',
+    "耳鼻喉科": '/home/why/CODES/Medical_Chat/WHYembedding/耳鼻喉科/vector_db',
+    "妇产科": '/home/why/CODES/Medical_Chat/WHYembedding/妇产科/vector_db',
+    "感染科": '/home/why/CODES/Medical_Chat/WHYembedding/感染科/vector_db',
+    "内科": '/home/why/CODES/Medical_Chat/WHYembedding/内科/vector_db',
+    "神经科": '/home/why/CODES/Medical_Chat/WHYembedding/神经科/vector_db',
+    "外科": '/home/why/CODES/Medical_Chat/WHYembedding/外科/vector_db',
+}
+
 model_center = qa_chain()
 import gradio as gr
 
@@ -221,14 +222,12 @@ with block as demo:
             # msg的默认值是example_prompts[0]，即第一个例子。
             msg = gr.Textbox(label="Prompt")
             # msg = str(msg)
-            db_select = gr.Dropdown(list(db_paths.keys()), label="选择数据库", value="儿科", interactive=True)
-            
-            # print(db_select)
-            
+            db_select = gr.Dropdown(list(db_paths.keys()), label="选择数据库")
+    
             example_prompt_table = gr.Radio(
                 example_prompts, 
                 label="Example Prompts",
-                value=example_prompts[0], 
+                value=None, 
                 interactive=True
             )
             example_prompt_table.change(update_msg, inputs=[example_prompt_table], outputs=[msg])
@@ -261,6 +260,7 @@ with block as demo:
                                         step=1,
                                         label="history length",
                                         interactive=True)
+                
             model_select = gr.Accordion("模型选择")
             with model_select:
                 llm = gr.Dropdown(
@@ -283,6 +283,7 @@ with block as demo:
                 msg, 
                 top_k, 
                 chatbot, 
+                db_select
             ],
             outputs=[msg, chatbot]
         )
@@ -295,7 +296,7 @@ with block as demo:
                                     msg,         # question
                                     top_k,       # top_k
                                     chatbot,     # chat_history (这个参数应该是由 Chatbot 组件提供的历史记录)
-                                      # db_select
+                                    db_select
                                 ],
                               outputs=[msg, chatbot])
         # 设置按钮的点击事件。当点击时，调用上面定义的 respond 函数，并传入用户的消息和聊天历史记录，然后更新文本框和聊天机器人组件。
