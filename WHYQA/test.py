@@ -17,8 +17,8 @@ sys.path.append(module_dir1)
 
 from WHYLLMCallClass import test_qianfan_llm
 llm = test_qianfan_llm.QianFanLLM(model_name="Yi-34B-Chat", 
-                       api_key="HnngI6IOybeRJyLgvtowIRUt", 
-                       api_secret="Vx7tFMIdGDrouCsyBRuChmbNBHhlMM2e")
+                       api_key="", 
+                       api_secret="")
 
 result = llm.invoke("你好")
 print(result)
