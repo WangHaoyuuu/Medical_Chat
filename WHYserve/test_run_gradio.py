@@ -1,7 +1,9 @@
 import sys 
 import sys 
 import os
-import os               
+import os
+import os
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'               
 import re
 # 获取当前脚本的绝对路径
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -266,14 +268,24 @@ example_prompts = [
     "如何使用Python进行数据分析？"
 ]
 
+# db_paths = {
+#     "儿科": '/root/autodl-tmp/Medical_Chat/WHYembedding/儿科/vector_db',
+#     "耳鼻喉科": '/root/autodl-tmp/Medical_Chat/WHYembedding/耳鼻喉科/vector_db',
+#     "妇产科": '/root/autodl-tmp/Medical_Chat/WHYembedding/妇产科/vector_db',
+#     "感染科": '/root/autodl-tmp/Medical_Chat/WHYembedding/感染科/vector_db',
+#     "内科": '/root/autodl-tmp/Medical_Chat/WHYembedding/内科/vector_db',
+#     "神经科": '/root/autodl-tmp/Medical_Chat/WHYembedding/神经科/vector_db',
+#     "外科": '/root/autodl-tmp/Medical_Chat/WHYembedding/外科/vector_db',
+# }
+
 db_paths = {
-    "儿科": '/root/autodl-tmp/Medical_Chat/WHYembedding/儿科/vector_db',
-    "耳鼻喉科": '/root/autodl-tmp/Medical_Chat/WHYembedding/耳鼻喉科/vector_db',
-    "妇产科": '/root/autodl-tmp/Medical_Chat/WHYembedding/妇产科/vector_db',
-    "感染科": '/root/autodl-tmp/Medical_Chat/WHYembedding/感染科/vector_db',
-    "内科": '/root/autodl-tmp/Medical_Chat/WHYembedding/内科/vector_db',
-    "神经科": '/root/autodl-tmp/Medical_Chat/WHYembedding/神经科/vector_db',
-    "外科": '/root/autodl-tmp/Medical_Chat/WHYembedding/外科/vector_db',
+    "儿科": '/home/why/CODES/Medical_Chat/WHYembedding/儿科/vector_db',
+    "耳鼻喉科": '/home/why/CODES/Medical_Chat/WHYembedding/耳鼻喉科/vector_db',
+    "妇产科": '/home/why/CODES/Medical_Chat/WHYembedding/妇产科/vector_db',
+    "感染科": '/home/why/CODES/Medical_Chat/WHYembedding/感染科/vector_db',
+    "内科": '/home/why/CODES/Medical_Chat/WHYembedding/内科/vector_db',
+    "神经科": '/home/why/CODES/Medical_Chat/WHYembedding/神经科/vector_db',
+    "外科": '/home/why/CODES/Medical_Chat/WHYembedding/外科/vector_db',
 }
 
 model_center = qa_chain()
